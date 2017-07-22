@@ -1,0 +1,179 @@
+##Introdução
+3,5 polegadas tela de toque TFT LCD projetado para Raspberry Pi
+
+
+##Começando
+```
+O RPi LCD pode ser conduzido de duas maneiras: Método 1. instale o driver no sistema operacional Raspbian.
+Método 2. use o arquivo de imagem pronto a usar do qual o driver LCD foi pré-instalado.
+```
+Método 1. Instalação do driver
+Descrição: Os drivers não estão disponíveis para o NOOBS ou qualquer sistema instalado pela NOOBS.
+
+Se a tela de toque não funcionar corretamente, instale o driver: LCD-show-170703.tar.gz, mas não o LCD-show-161112.tar.gz.
+
+LCD-show-170703.tar.gz (a conexão de rede é necessária durante a instalação)
+LCD-show-161112.tar.gz
+1. Configure o seu Pi:
+
+Sudo raspi-config
+Definir como:
+
+Selecione Expandir o Sistema de arquivos.
+Opção de inicialização -> Desktop Autologin (pode diferir dependendo da revisão Raspbian)
+2. Copie o driver (escolha o driver de acordo com o seu sistema operacional) em seu sistema operacional, depois execute os seguintes comandos:
+
+Tar xvf LCD-show - *. Tar.gz
+Cd display LCD /
+Instale o driver e alterna o modo para o visor LCD: Nota: A conexão de trabalho de rede é necessária ao instalar o driver no seu Pi, ou então o toque não funcionará corretamente.
+
+Chmod + x LCD35-show
+./LCD35-show
+Nota: este LCD não funcionará após a atualização do apt-get, em tais casos, edite o arquivo config.txt no cartão SD e remova esta declaração: dtoverlay=ads7846
+
+3. Após a reinicialização do sistema, o RPi LCD está pronto para usar.
+
+Método 2. Usando a imagem pronta para usar
+O arquivo de imagem com driver pré-instalado está localizado no diretório IMAGE do CD, ou você pode baixá-lo de #Image . Extraia o arquivo .7z e você receberá um arquivo .img. Escreva a imagem no seu cartão micro SD (Como escrever uma imagem em um cartão micro SD para o seu Pi? Consulte os Guias de instalação da imagem RPi para obter mais detalhes). Em seguida, insira o cartão no seu Pi, ligue e aproveite.
+
+Alternar entre tela LCD e HDMI
+Uma vez que este LCD está ativado, enquanto isso, as configurações padrão para HDMI são alteradas. Se você quiser usar outro monitor HDMI, execute o seguinte comando:
+
+Cd display LCD /
+./LCD-hdmi
+Isso alterna o modo para o visor LCD:
+
+./LCD35-show
+Configurações de orientação da tela
+Depois que o driver de toque instalado, a orientação da tela pode ser definida por esses comandos:
+
+Rotação de 0 graus
+Cd display LCD /
+./LCD35-show 0
+
+Rotação de 90 graus
+Cd display LCD /
+./LCD35-show 90
+
+Rotação de 180 graus
+Cd display LCD /
+./LCD35- show 180
+
+Rotação de 270 graus
+Cd display LCD /
+./LCD35-show 270
+
+
+Calibração de tela sensível ao toque
+Este LCD pode ser calibrado usando um programa chamado xinput_calibrator que está pré-instalado na imagem do CD. No entanto, não foi pré-instalado no SO Raspbian original. Então, neste caso, você deve obter e instalar o programa manualmente com
+
+Sudo apt-get install -y xinput-calibrator
+Digite os seguintes comandos para a calibração da tela sensível ao toque:
+
+Sudo DISPLAY =: 0.0 xinput_calibrator
+Ou selecione Menu -> Preferências -> Calibrar tela sensível ao toque.
+
+Depois de executar esses comandos, haverá um prompt para a calibração de quatro pontos mostrada na tela LCD. Clique nos pontos um a um para finalizar a calibração do toque. Então, os novos dados de calibração serão exibidos no terminal, conforme mostrado abaixo. Obtenha esses dados para uso futuro.
+
+Fazendo uma recalibração dinâmica:
+Configurando novos dados de calibração: 3919, 208, 236, 3913
+Digite o seguinte comando para editar 99-calibration.conf:
+
+Sudo nano /etc/X11/xorg.conf.d/99-calibration.conf
+Em seguida, os dados de calibração anteriores serão exibidos no terminal:
+
+Seção "InputClass"
+Identificação "calibração"
+MatchProduct "Touchscreen ADS7846"
+Opção "Calibração" "160 3723 3896 181"
+Opção "SwapAxes" "1"
+EndSection
+Modifique os dados de calibração para os novos dados de calibração exibidos acima):
+
+Seção "InputClass"
+Identificação "calibração"
+MatchProduct "Touchscreen ADS7846"
+Opção "Calibração" "3919 208 236 3913"
+Opção "SwapAxes" "1"
+EndSection
+Pressione as teclas Ctrl + X e selecione a opção Y para salvar a modificação.
+
+A modificação será válida após a reinicialização do sistema. Digite o seguinte comando para a reinicialização do sistema:
+
+Reiniciar
+Avisos: Em caso de toque impreciso, execute a calibração da tela novamente e reinicie o sistema.
+
+Como trabalhar com uma câmera
+1. Selecione "Ativar câmera" -> "<YES>"
+
+Sudo raspi-config
+2. Copie o driver da câmera para o SO de Pi, então:
+
+Descompacte camera.zip
+Câmera de cd
+Camara sudo chmod 777
+Sudo cp update \ camera / 95-stmpe.rules /etc/udev/rules.d/
+3. Crie um arquivo chamado wheezy.list.
+
+Sudo nano /etc/apt/sources.list.d/wheezy.list
+Acrescentar:
+
+Deb http://archive.raspbian.org/raspbian wheezy main
+Sair com salvar.
+
+4. Crie um arquivo chamado 10defaultRelease.
+
+Sudo nano /etc/apt/apt.conf.d/10defaultRelease
+Acrescentar:
+
+APT :: Default-release \ "stable";
+Sair com salvar.
+
+5. Crie um arquivo chamado libsdl.
+
+Sudo nano /etc/apt/preferences.d/libsdl
+Acrescentar:
+
+Pacote: libsdl1.2debian
+Pin: release n = jessie
+Pin-Priority: -10
+Pacote: libsdl1.2debian
+Pin: liberação n = wheezy
+Pin-Priority: 900
+Sair com salvar.
+
+6. Por último, execute os comandos:
+
+Sudo apt-get update
+Sudo apt-get -y --force-yes install libsdl1.2debian / wheezy
+Sudo apt-get install evtest tslib libts-bin xinput
+Sudo apt-get install python-pip 
+Sudo apt-get install python2.7-dev
+Sudo pip install picamera == 1.10 
+Reiniciar
+Sudo TSLIB_FBDEVICE = / dev / fb1 TSLIB_TSDEVICE = / dev / input / touchscreen ts_calibrate
+A câmera será ativada pelos passos acima.
+
+Recurso
+Manual do usuário
+Imagem
+Descrição: se você se sentiu difícil de instalar o driver, tente a imagem com o driver pré-instalado.
+
+RPi-35inch-LCD-Raspbian-160728.7z
+Motorista
+Os drivers não estão disponíveis para NOOBS ou qualquer sistema instalado pela NOOBS.
+
+Se a tela de toque não funcionar corretamente, instale o driver: LCD-show-170703.tar.gz, mas não o LCD-show-161112.tar.gz.
+
+LCD-show-170703.tar.gz (a conexão de rede é necessária durante a instalação)
+LCD-show-161112.tar.gz
+Programas
+Panasonic SDFormatter
+Win32DiskImager
+PuTTY
+Dimensão do painel LCD
+3.5inch RPi LCD (A) dimensão do painel
+
+
+Dúvidas consultar fonte:
+http://www.waveshare.com/wiki/3.5inch_RPi_LCD_(A)
