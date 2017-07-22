@@ -1,0 +1,312 @@
+ Instalando em Raspberry Pi (Stand-alone)
+
+Este é um guia para tudo o que você precisa para instalar o EmulationStation em uma nova instalação do Raszbian Wheezy.
+
+EmulationStation requer SDL2, que não está nos repositórios Raspbian, então este guia também irá mostrar como compilar e instalar o SDL2.
+
+
+Certifique-se de que tudo esteja atualizado
+
+sudo apt-get update
+sudo apt-get upgrade
+sudo rpi-update
+
+Defina a quantidade mínima de RAM para a GPU
+
+sudo nano /boot/config.txt
+# add or replace "gpu_mem = 32"
+# if you skip this step, you will probably get "out of memory" errors when compiling
+
+Reinicie para aplicar as mudanças de RAM da GPU e certifique-se de que está usando o firmware mais recente
+
+sudo reboot
+
+Instalar dependências para SDL2
+
+sudo apt-get install -y libudev-dev libasound2-dev libdbus-1-dev libraspberrypi0 libraspberrypi-bin libraspberrypi-dev
+
+Instalar dependências para o EmulationStation
+
+sudo apt-get install -y libboost-system-dev libboost-filesystem-dev libboost-date-time-dev libboost-locale-dev libfreeimage-dev libfreetype6-dev libeigen3-dev libcurl4-openssl-dev libasound2-dev cmake g++-4.7
+
+NOTA: se você não instalar libudev-dev antes de criar o SDL2, o teclado não funcionará misteriosamente no EmulationStation.
+
+
+Compile e instale o SDL2
+
+wget http://libsdl.org/release/SDL2-2.0.1.tar.gz
+tar xvfz SDL2-2.0.1.tar.gz
+rm SDL2-2.0.1.tar.gz
+pushd SDL2-2.0.1
+# "--disable-video-opengl" is used to disable the software implementation of desktop OpenGL on the Pi
+# "--host=*" is used to force the Raspberry Pi host. See issue #395 on GitHub for details on why.
+./configure --disable-video-opengl --host=arm-raspberry-linux-gnueabihf
+make
+sudo make install
+popd
+
+Se você quiser, você pode excluir a pasta SDL2-2.0.1 agora (a biblioteca foi instalada):
+
+rm -rf SDL2-2.0.1
+
+Compile e instale o EmulationStation
+
+git clone https://github.com/Aloshi/EmulationStation
+cd EmulationStation
+git checkout unstable
+# On the RPi 2, you may need to add '-DFREETYPE_INCLUDE_DIRS=/usr/include/freetype2/' before the period.
+# See issue #384 on GitHub for details.
+cmake -DCMAKE_CXX_COMPILER=g++-4.7 .
+make
+Isso levará muito, muito tempo (várias horas).
+
+
+Se você deseja instalar a emulationtation /usr/local/bin/emulationstation, o que permitirá que você digite 'emulationstation' para executá-lo, você pode fazer:
+
+sudo make install
+NOTA: Isso entrará em conflito com o RetroPie, que instala um script bash para /usr/bin/emulationstation.
+
+
+Caso contrário, você pode executar o binário a partir desta pasta com:
+
+./emulationstation
+
+Redefinir GPU RAM para valores normais e reiniciar
+
+sudo nano /boot/config.txt
+# change "gpu_mem = 32" to "gpu_mem = 128" or "gpu_mem = 256", depending on your Pi model
+sudo reboot
+
+Configure o EmulationStation e instale alguns temas.
+
+Configurando o EmulationStation
+
+AVISO: Não edite arquivos de configuração enquanto o EmulationStation está sendo executado. Isso tem sido conhecido por causar efeitos colaterais estranhos, como arquivos substituídos e derreter as calotas polares.
+
+Se você estiver usando uma distribuição pré-configurada como o RetroPie, provavelmente pode ignorar esta seção.
+
+Você pode querer ler o arquivo README.md , bem como este documento.
+
+
+A .emulationstation Pasta
+
+EmulationStation armazena todos os seus arquivos de configuração em relação a uma "pasta inicial". Todo o arquivo de configuração do EmulationStation vai em uma .emulationstation pasta dentro dessa "pasta inicial".
+
+Eu ocasionalmente me referi a esse caminho como ~/.emulationstation . Apenas mentalmente substitua a ~ pasta doméstica da sua plataforma.
+
+
+janelas
+
+No Windows, a "pasta inicial" é definida pela %HOMEPATH% variável de ambiente. Para ver onde realmente é, basta digitá-lo na janela do Windows Explorer e pressione enter:
+
+explorador
+Enter_homepath
+Resolve_homepath
+Então, o caminho completo para a .emulationstation pasta é %HOMEPATH%\.emulationstation .
+
+
+Linux
+
+Em Linx, isto é equivalente à $HOME variável de ambiente. É aqui que o seu navegador de arquivos e terminais deve começar.
+
+Então, o caminho completo para a .emulationstation pasta é $HOME/.emulationstation .
+
+NOTA: no Linux, os arquivos e pastas que começam com a . são "pastas ocultas", para que a .emulationstation pasta não apareça. Se você estiver usando o terminal, você pode usar ls -a para listar todos os arquivos em um diretório, incluindo os ocultos. Se você estiver usando uma interface gráfica, deve haver uma opção para mostrar arquivos e pastas ocultos.
+
+
+O es_systems.cfg Arquivo
+
+Este é o arquivo de configuração principal do EmulationStation. Está localizado em ~/.emulationstation/es_systems.cfg . É um documento XML que define uma lista de sistemas . Um sistema contém as informações mínimas necessárias para encontrar seus jogos e iniciá-los.
+
+Aqui está um exemplo, com comentários:
+
+<!-- This is the EmulationStation Systems configuration file. All systems must be contained within the <systemList> tag.-->
+<systemList>
+
+<!-- Here's an example system to get you started. -->
+<system>
+
+<!-- A short identifier for the system. Used in some folder structures and error messages. -->
+<name>snes</name>
+
+<!-- A "pretty" name, displayed in the menus and such. This tag is optional. -->
+<fullname>Super Nintendo Entertainment System</fullname>
+
+<!-- The path to the top-most folder to start searching for games in. If the first character is '~', it will be expanded to the home folder. All subdirectories will be included. You can use forward slashes for any platform and backslashes on Windows. -->
+<path>~/roms/snes</path>
+
+<!-- A list of extensions to search for, delimited by commas or spaces. You MUST include the period at the start of the extension! It's also case sensitive. -->
+<extension>.smc .sfc .SMC .SFC</extension>
+
+<!-- This is the shell command that is executed to run a game. A few special tags are replaced if found in a command, like %ROM%. This example would run the shell command "snesemulator /home/user/roms/snes/Super\ Mario\ World.sfc".
+<command>snesemulator %ROM%</command>
+
+<!-- The platform(s) to use when scraping (download box art and such). You can see the full list of accepted platforms below. Everything should be lowercase. This is only *only* used to give more accurate search results, so this tag is optional. You can use multiple platforms, delimited by commas or spaces.  For example: "genesis, megadrive". -->
+<platform>snes</platform>
+
+<!-- This is the theme to load from the current theme set. This tag is also optional; if not set, it will default to the value of <name>. It is recommended that you use a name from the "Recommended Theme Names" list below to make installing themes as painless as possible.-->
+<theme>snes</theme>
+
+</system>
+
+</systemList>
+Observe que todos os <system> s estão listados dentro de uma <systemList> etiqueta.
+
+Se você quiser adicionar outro sistema, basta adicioná-lo assim:
+
+<systemList>
+<system>
+<!-- System 1 -->
+</system>
+
+<system>
+<!-- System 2 -->
+</system>
+
+<!-- And so on... -->
+</systemList>
+Os sistemas são exibidos na ordem em que são definidos.
+
+NOTA: se um sistema não tiver pelo menos um presente de jogo (que corresponda à lista de extensões), ele não será exibido. 
+Se nenhum sistema tiver jogos presentes, você receberá um erro de "configuração inválida"! 
+Nomes Temáticos Recomendados
+
+EmulationStation não restringirá os nomes escolhidos para temas. No entanto, no interesse de manter a instalação de temas um simples processo de arrastar e soltar para a configuração de todos, use um dos seguintes itens como o nome do seu sistema:
+
+NOTA: são sensíveis a maiúsculas e minúsculas no Linux.
+
+3do
+amiga
+amstradcpc
+apple2
+art
+atari2600
+atari5200
+atari7800
+atari800
+atarijaguar
+atarijaguarcd
+atarist
+atarifalcon
+atarixe
+c64
+colecovision
+amstradcpc
+fba
+gamegear
+gb
+gba
+gbc
+gc
+intellivision
+macintosh
+mame
+mastersystem
+megadrive
+n64
+neogeo
+nes
+ngp
+ngpc
+pc
+pcengine
+ports
+psx
+scummvm
+sega32x
+segacd
+snes
+zmachine
+zxspectrum
+(Se não estiver aqui, você pode criar algo, uma vez que provavelmente não existe um tema para isso)
+
+
+Nomes de Plataforma
+
+Esta é a lista de plataformas válidas que você pode em uma <platform> etiqueta. A plataforma é usada ao raspar para fornecer resultados mais precisos. Você pode usar mais de uma plataforma.
+
+NOTA: são sensíveis a maiúsculas e minúsculas.
+
+3do
+amiga
+amstradcpc
+apple2
+arcade
+atari800
+atari2600
+atari5200
+atari7800
+atarilynx
+atarist
+atarijaguar
+atarijaguarcd
+atarixe
+colecovision
+c64 - comodoro 64
+intellivision
+macintosh
+xbox
+xbox360
+msx
+neogeo
+ngp - bolso neo geo
+ngpc - cor do bolso neo geo
+n3ds - Nintendo 3DS
+n64 - nintendo 64
+nds - Nintendo DS
+nes - sistema de entretenimento nintendo
+gb - game Boy
+gba - avanço do menino do jogo
+gbc - cor do menino do jogo
+gc - Game Cube
+wii
+wiiu
+pc
+sega32x
+segacd
+dreamcast
+gamegear
+genesis - Sega genesis
+mastersystem - sistema mestre sega
+megadrive - Sega Megadrive
+saturn - sega saturno
+psx
+ps2
+ps3
+ps4
+psvita
+psp - Playstation portátil
+snes - sistema de entretenimento super nintendo
+pcengine - turbografx-16 / pcengine
+wonderswan
+wonderswancolor
+zxspectrum
+ignore - Não permita a raspagem desse sistema; Irá remover este sistema da lista de raspagem e remover o botão "raspar" no editor de metadados.
+(Se você suspeitar que isso não está atualizado, marque src/PlatformId.cpp )
+
+
+Comandos de lançamento
+
+Os comandos de lançamento dependem do emulador que você deseja usar.
+
+95% do tempo, /path/to/emulator %ROM% ou C:\path\to\emulator.exe "%ROM_RAW%" funciona.
+
+Se você estiver usando MAME, /path/to/mame %BASENAME% deve fazer o truque.
+
+As seguintes strings são substituídas em seu comando de inicialização:
+
+%ROM% - Substituído com o caminho absoluto escapado do shell para a ROM selecionada. No Linux, a maioria dos caracteres especiais do Bash são escapados com uma barra invertida. No Windows, o caminho da ROM é automaticamente incluído em aspas, o que equivale a "% ROM_RAW%" (a partir da versão 2.0.1).
+%BASENAME% - Substituído com o nome "base" do caminho para a ROM selecionada. Por exemplo, um caminho de "/foo / bar.rom", essa tag seria "barra". Esta etiqueta é útil para configurar o MAME.
+%ROM_RAW% - Substituído pelo caminho absoluto, não elaborado, para a ROM selecionada. Se o seu emulador for exigente sobre os caminhos ou estiver no Windows, você pode querer usar isso em vez de% ROM%, mas entre aspas. Por exemplo: higan "%ROM_RAW%" .
+
+Instalando Temas
+
+Se você usou o instalador do Windows ou o pacote Debian, um conjunto de temas padrão já deveria estar instalado ( ~/.emulationstation/themes no Windows e /etc/emulationstation/themes no Linux).
+
+Enquanto você usou um nome da lista acima, você só precisa baixar e extrair o tema definido ~/.emulationstation/themes . Se a themes pasta ainda não existe, basta criá-la.
+
+Depois disso, selecione o novo tema configurado MENU -> UI SETTINGS -> THEME SET , como assim:
+
+Theme_set_select
+
+Fonte: http://www.emulationstation.org/gettingstarted.html#install_rpi_standalone
